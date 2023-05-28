@@ -3,8 +3,8 @@ Small side project for graphics & visualization class
 
 
 # Features 
-- [ ] Apply image default filters
-- [ ] Download final image
+- [x] Apply image default filters
+- [x] Download final image
 
 # TODO
 - [ ] More filters
