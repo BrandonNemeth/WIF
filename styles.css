@@ -54,5 +54,9 @@ h1 {
 }
 
 #canvas-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   margin-top: 2em;
 }
+
