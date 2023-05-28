@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Image Filter Application</title>
+    <link rel="stylesheet" type="text/css" href="styles.css">
+  </head>
+  <body>
+    <button id="downloadButton">Download</button>
+    <input type="file" id="imageLoader" name="imageLoader"/>
+    <div class="filter-controls">
+      <div class="filter-control">
+        <label for="filterSelect">Filter:</label>
+        <select id="filterSelect">
+          <option value="none">None</option>
+          <option value="grayscale">Grayscale</option>
+          <option value="sepia">Sepia</option>
+          <option value="blur">Blur</option>
+          <option value="invert">Invert</option>
+          <option value="brightness">Brightness</option>
+          <option value="saturation">Saturation</option>
+          <option value="nord">Nord</option>
+        </select>
+      </div>
+      <div class="filter-control">
+        <label for="brightnessRange">Brightness:</label>
+        <input type="range" id="brightnessRange" min="0" max="2" step="0.1" value="1">
+      </div>
+      <div class="filter-control">
+        <label for="saturationRange">Saturation:</label>
+        <input type="range" id="saturationRange" min="0" max="2" step="0.1" value="1">
+      </div>
+    </div>
+    <div id="canvas-container"></div>
+    <script src="https://threejs.org/build/three.js"></script>
+    <script src="main.js"></script>
+    <script src="initShaders.js"></script>
+    <script type="x-shader/x-vertex" id="vertex-shader">
+        varying vec2 vUv;
+      
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      </script>
+      
+      <script type="x-shader/x-fragment" id="fragment-shader-grayscale">
+        uniform sampler2D map;
+        varying vec2 vUv;
+      
+        void main() {
+          vec4 color = texture2D(map, vUv);
+          float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+          gl_FragColor = vec4(gray, gray, gray, 1.0);
+        }
+      </script>
+      <script type="x-shader/x-fragment" id="fragment-shader-sepia">
+        uniform sampler2D map;
+        varying vec2 vUv;
+    
+        void main() {
+            vec4 color = texture2D(map, vUv);
+            float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+            vec3 sepia = vec3(gray * 1.2, gray, gray * 0.8);
+            gl_FragColor = vec4(sepia, 1.0);
+        }
+    </script>
+    <script type="x-shader/x-fragment" id="fragment-shader-blur">
+        uniform sampler2D map;
+        varying vec2 vUv;
+        uniform vec2 resolution;
+    
+        void main() {
+            vec2 texelSize = 2.0 / resolution;
+            vec4 colorSum = vec4(0.0);
+            
+            for (int x = -2; x <= 2; x++) {
+                for (int y = -2; y <= 2; y++) {
+                    vec2 offset = vec2(float(x), float(y)) * texelSize;
+                    colorSum += texture2D(map, vUv + offset);
+                }
+            }
+            
+            vec4 blurredColor = colorSum / 25.0; // Average of 25 samples
+            gl_FragColor = blurredColor;
+        }
+    </script>
+    <script type="x-shader/x-fragment" id="fragment-shader-invert">
+        uniform sampler2D map;
+        varying vec2 vUv;
+    
+        void main() {
+            vec4 color = texture2D(map, vUv);
+            vec4 invertedColor = vec4(1.0 - color.rgb, color.a);
+            gl_FragColor = invertedColor;
+        }
+    </script>
+    <script type="x-shader/x-fragment" id="fragment-shader-brightness">
+        uniform sampler2D map;
+        varying vec2 vUv;
+        uniform float brightness;
+    
+        void main() {
+            vec4 color = texture2D(map, vUv);
+            vec4 brightenedColor = color * brightness;
+            gl_FragColor = brightenedColor;
+        }
+    </script>
+    <script type="x-shader/x-fragment" id="fragment-shader-saturation">
+        uniform sampler2D map;
+        varying vec2 vUv;
+        uniform float saturation;
+    
+        void main() {
+            vec4 color = texture2D(map, vUv);
+            float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+            vec4 desaturatedColor = vec4(mix(vec3(gray), color.rgb, saturation), color.a);
+            gl_FragColor = desaturatedColor;
+        }
+    </script>
+    <script type="x-shader/x-fragment" id="fragment-shader-nord">
+        uniform sampler2D map;
+        varying vec2 vUv;
+    
+        const vec3 nord0 = vec3(46.0/255.0, 52.0/255.0, 64.0/255.0);
+        const vec3 nord1 = vec3(59.0/255.0, 66.0/255.0, 82.0/255.0);
+        const vec3 nord2 = vec3(67.0/255.0, 76.0/255.0, 94.0/255.0);
+        const vec3 nord3 = vec3(76.0/255.0, 86.0/255.0, 106.0/255.0);
+        const vec3 nord4 = vec3(216.0/255.0, 222.0/255.0, 233.0/255.0);
+        const vec3 nord5 = vec3(229.0/255.0, 233.0/255.0, 240.0/255.0);
+        const vec3 nord6 = vec3(236.0/255.0, 239.0/255.0, 244.0/255.0);
+        const vec3 nord7 = vec3(143.0/255.0, 188.0/255.0, 187.0/255.0);
+        const vec3 nord8 = vec3(136.0/255.0, 192.0/255.0, 208.0/255.0);
+        const vec3 nord9 = vec3(129.0/255.0, 161.0/255.0, 193.0/255.0);
+        const vec3 nord10 = vec3(94.0/255.0, 129.0/255.0, 172.0/255.0);
+        const vec3 nord11 = vec3(191.0/255.0, 97.0/255.0, 106.0/255.0);
+    
+        void main() {
+            vec4 color = texture2D(map, vUv);
+            vec3 desaturatedColor = vec3(dot(color.rgb, vec3(0.2126, 0.7152, 0.0722)));
+    
+            // Apply Nord color mapping
+            vec3 nordColor;
+            if (desaturatedColor.r < 0.5) {
+                nordColor = mix(nord0, nord3, desaturatedColor.r * 2.0);
+            } else {
+                nordColor = mix(nord3, nord4, (desaturatedColor.r - 0.5) * 2.0);
+            }
+    
+            gl_FragColor = vec4(nordColor, color.a);
+        }
+    </script>
+    
+
+  </body>
+</html>
